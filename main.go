@@ -1,7 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"interpreter/repl"
+	"os"
+)
 
 func main() {
-	fmt.Println("vim-go")
+	repl.Start(os.Stdin, os.Stdout)
 }
