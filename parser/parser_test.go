@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"interpreter/ast"
 	"interpreter/lexer"
 	"testing"
@@ -171,4 +172,63 @@ func TestIntergerLiteralExpression(t *testing.T) {
 	if literal.TokenLiteral() != "5" {
 		t.Errorf("tokenLiteral not '5' got %s", literal.TokenLiteral())
 	}
+}
+
+func TestParsingPrefixExpression(t *testing.T) {
+	prefixTests := []struct {
+		input        string
+		operator     string
+		integerValue int64
+	}{
+		{"!5;", "!", 5},
+		{"-15", "-", 15},
+	}
+
+	for _, tt := range prefixTests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParseErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("statements, expected 1 got %d", len(program.Statements))
+		}
+
+		statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("statement not expression, got %T", program.Statements[0])
+		}
+
+		expression, ok := statement.Expression.(*ast.PrefixExpression)
+		if !ok {
+			t.Fatalf("expression not prefix, got %T", statement.Expression)
+		}
+
+		if expression.Operator != tt.operator {
+			t.Fatalf("operator, expected %s got %s", tt.operator,
+				expression.Operator)
+		}
+
+		if !testIntegerLiteral(t, expression.Right, tt.integerValue) {
+			return
+		}
+	}
+}
+
+func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
+	integer, ok := il.(*ast.IntegerLiteral)
+	if !ok {
+		t.Errorf("not IntergerLiteral, got %T", il)
+	}
+
+	if integer.Value != value {
+		t.Errorf("value, expected %d got %d", integer.Value, value)
+	}
+
+	if integer.TokenLiteral() != fmt.Sprintf("%d", value) {
+		t.Errorf("tokenLiteral, expected %d got %s",
+			value, integer.TokenLiteral())
+		return false
+	}
+	return true
 }
