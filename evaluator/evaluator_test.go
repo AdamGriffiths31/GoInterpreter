@@ -41,7 +41,7 @@ func testEval(input string) object.Object {
 func testIntegerObject(t *testing.T, obj object.Object, expected int64) bool {
 	result, ok := obj.(*object.Integer)
 	if !ok {
-		t.Errorf("object not integer, got %T", obj)
+		t.Errorf("object not integer, got %T (%q)", obj, obj)
 		return false
 	}
 
@@ -255,5 +255,86 @@ func TestLetStatement(t *testing.T) {
 	}
 	for _, tt := range tests {
 		testIntegerObject(t, testEval(tt.input), tt.expected)
+	}
+}
+
+func TestFunctionObject(t *testing.T) {
+	input := "fn(x) { x + 2;};"
+
+	evaluated := testEval(input)
+	fn, ok := evaluated.(*object.Function)
+	if !ok {
+		t.Fatalf("object is not a function, got %T", evaluated)
+	}
+
+	if len(fn.Parameters) != 1 {
+		t.Fatalf("parameters, expected 1 got %d", len(fn.Parameters))
+	}
+
+	if fn.Parameters[0].String() != "x" {
+		t.Fatalf("parameters, expected 'x' got %q", fn.Parameters[0])
+	}
+
+	expectedBody := "(x + 2)"
+
+	if fn.Body.String() != expectedBody {
+		t.Fatalf("body, expected %s got %s", expectedBody, fn.Body.String())
+	}
+}
+
+func TestFunctionApplication(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{"let identity = fn(x) { x; }; identity(5);", 5},
+		{"let identity = fn(x) { return x; }; identity(5);", 5},
+		{"let double = fn(x) { x * 2; }; double(5);", 10},
+		{"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+		{"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+		{"fn(x) { x; }(5)", 5},
+	}
+
+	for _, tt := range tests {
+		testIntegerObject(t, testEval(tt.input), tt.expected)
+	}
+}
+
+func TestClosures(t *testing.T) {
+	input := `
+		let newAdder = fn(x) {
+		  fn(y) { x + y };
+		};
+
+		let addTwo = newAdder(2);
+		addTwo(2);`
+
+	testIntegerObject(t, testEval(input), 4)
+}
+
+func TestStringLiteral(t *testing.T) {
+	input := `"hello world!"`
+
+	evaluated := testEval(input)
+	str, ok := evaluated.(*object.String)
+	if !ok {
+		t.Fatalf("object not a string got %T", evaluated)
+	}
+
+	if str.Value != "hello world!" {
+		t.Fatalf("value, got %s", str.Value)
+	}
+}
+
+func TestStringConcat(t *testing.T) {
+	input := `"hello" + " " + "world"`
+	evaluated := testEval(input)
+
+	str, ok := evaluated.(*object.String)
+	if !ok {
+		t.Fatalf("object not a string, got %T", evaluated)
+	}
+	if str.Value != "hello world" {
+		t.Fatalf("value, got %s", str.Value)
 	}
 }

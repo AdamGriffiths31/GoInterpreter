@@ -55,6 +55,8 @@ func TestNextTokenWithFunction(t *testing.T) {
 
 		10 == 10;
 		10 != 9;
+		"foo"
+		"foo bar"
 		`
 	tests := []struct {
 		expectedType    token.TokenType
@@ -133,6 +135,9 @@ func TestNextTokenWithFunction(t *testing.T) {
 		{token.NOT_EQ, "!="},
 		{token.INT, "9"},
 		{token.SEMICOLON, ";"},
+		{token.STRING, "foo"},
+		{token.STRING, "foo bar"},
+		{token.EOF, ""},
 	}
 	l := New(input)
 	for i, tt := range tests {
