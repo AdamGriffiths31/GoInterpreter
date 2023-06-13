@@ -13,11 +13,11 @@ import (
 const prompt = ">>"
 
 func Start(in io.Reader, out io.Writer) {
+	env := object.NewEnvironment()
 	scanner := bufio.NewScanner(in)
 	for {
 		fmt.Fprintf(out, prompt)
 		scanned := scanner.Scan()
-		env := object.NewEnvironment()
 
 		if !scanned {
 			return
