@@ -94,6 +94,53 @@ func TestGlobalLetStatements(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestStringExpressions(t *testing.T) {
+	tests := []vmTestCase{
+		{`"foo"`, "foo"},
+		{`"foo" + "bar"`, "foobar"},
+		{`"foo" + "bar" + "bazz"`, "foobarbazz"},
+	}
+	runVmTests(t, tests)
+}
+
+func TestArrayLiterals(t *testing.T) {
+	tests := []vmTestCase{
+		{"[]", []int{}},
+		{"[1, 2, 3]", []int{1, 2, 3}},
+		{"[1 + 2, 3 * 4, 5 + 6]", []int{3, 12, 11}},
+	}
+	runVmTests(t, tests)
+}
+
+func TestHashLiterals(t *testing.T) {
+	tests := []vmTestCase{
+		{"{}", map[object.Hashkey]int64{}},
+		{"{1: 2, 2: 3}", map[object.Hashkey]int64{
+			(&object.Integer{Value: 1}).Hashkey(): 2,
+			(&object.Integer{Value: 2}).Hashkey(): 3,
+		}},
+		{"{1 + 1: 2 * 2, 3 + 3: 4 * 4}", map[object.Hashkey]int64{
+			(&object.Integer{Value: 2}).Hashkey(): 4,
+			(&object.Integer{Value: 6}).Hashkey(): 16,
+		}},
+	}
+	runVmTests(t, tests)
+}
+
+func TestIndexExpressions(t *testing.T) {
+	tests := []vmTestCase{
+		{"[1, 2, 3][1]", 2},
+		{"[1, 2, 3][0 + 2]", 3},
+		{"[[1, 1, 1]][0][0]", 1},
+		{"[][0]", Null},
+		{"[1, 2, 3][99]", Null},
+		{"{1: 1, 2: 2}[1]", 1},
+		{"{1: 1, 2: 2}[2]", 2},
+		{"{1: 1}[0]", Null},
+	}
+	runVmTests(t, tests)
+}
+
 func parse(input string) *ast.Program {
 	l := lexer.New(input)
 	p := parser.New(l)
@@ -122,6 +169,17 @@ func testBooleanObject(expected bool, actual object.Object) error {
 	return nil
 }
 
+func testStringObject(expected string, actual object.Object) error {
+	result, ok := actual.(*object.String)
+	if !ok {
+		return fmt.Errorf("object is not String. got=%T (%+v)", actual, actual)
+	}
+	if result.Value != expected {
+		return fmt.Errorf("object has wrong value. got=%s, want=%s", result.Value, expected)
+	}
+	return nil
+}
+
 func testExpectedObject(t *testing.T, expected interface{}, actual object.Object) {
 	t.Helper()
 
@@ -139,6 +197,43 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 	case *object.Null:
 		if actual != Null {
 			t.Errorf("object is not Null. got=%T (%+v)", actual, actual)
+		}
+	case string:
+		err := testStringObject(expected, actual)
+		if err != nil {
+			t.Errorf("testStringObject failed: %s", err)
+		}
+	case []int:
+		result, ok := actual.(*object.Array)
+		if !ok {
+			t.Errorf("object is not Array. got=%T (%+v)", actual, actual)
+		}
+		if len(result.Elements) != len(expected) {
+			t.Errorf("wrong number of elements. want=%d, got=%d", len(expected), len(result.Elements))
+		}
+		for i, el := range expected {
+			err := testIntegerObject(int64(el), result.Elements[i])
+			if err != nil {
+				t.Errorf("testIntegerObject failed: %s", err)
+			}
+		}
+	case map[object.Hashkey]int64:
+		result, ok := actual.(*object.Hash)
+		if !ok {
+			t.Errorf("object is not Hash. got=%T (%+v)", actual, actual)
+		}
+		if len(result.Pairs) != len(expected) {
+			t.Errorf("hash has wrong number of pairs. got=%d", len(result.Pairs))
+		}
+		for expectedKey, expectedValue := range expected {
+			pair, ok := result.Pairs[expectedKey]
+			if !ok {
+				t.Errorf("no pair for given key in Pairs")
+			}
+			err := testIntegerObject(expectedValue, pair.Value)
+			if err != nil {
+				t.Errorf("testIntegerObject failed: %s", err)
+			}
 		}
 	}
 }
