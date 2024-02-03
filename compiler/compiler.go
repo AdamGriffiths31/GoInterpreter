@@ -16,11 +16,11 @@ type EmittedInstruction struct {
 type Compiler struct {
 	constants   []object.Object
 	symbolTable *SymbolTable
-	scopes      []CompilerScope
+	scopes      []CompilationScope
 	scopeIndex  int
 }
 
-type CompilerScope struct {
+type CompilationScope struct {
 	instructions        code.Instructions
 	lastInstruction     EmittedInstruction
 	previousInstruction EmittedInstruction
@@ -32,7 +32,7 @@ type Bytecode struct {
 }
 
 func New() *Compiler {
-	mainScope := CompilerScope{
+	mainScope := CompilationScope{
 		instructions:        code.Instructions{},
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
@@ -40,7 +40,7 @@ func New() *Compiler {
 	return &Compiler{
 		constants:   []object.Object{},
 		symbolTable: NewSymbolTable(),
-		scopes:      []CompilerScope{mainScope},
+		scopes:      []CompilationScope{mainScope},
 		scopeIndex:  0,
 	}
 }
@@ -350,7 +350,7 @@ func (c *Compiler) setLastInstruction(op code.Opcode, pos int) {
 }
 
 func (c *Compiler) enterScope() {
-	scope := CompilerScope{
+	scope := CompilationScope{
 		instructions:        code.Instructions{},
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},

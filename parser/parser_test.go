@@ -114,33 +114,38 @@ func checkParserErrors(t *testing.T, p *Parser) {
 	t.FailNow()
 }
 
-func TestRetuenStatement(t *testing.T) {
-	input := `
-	return 5;
-	return 10;
-	return 300400;
-	`
-
-	l := lexer.New(input)
-	p := New(l)
-
-	program := p.ParseProgram()
-	checkParserErrors(t, p)
-
-	if len(program.Statements) != 3 {
-		t.Fatalf("statements, expected 3 got %d", len(program.Statements))
+func TestReturnStatement(t *testing.T) {
+	tests := []struct {
+		input         string
+		expectedValue interface{}
+	}{
+		{"return 5;", 5},
+		{"return true;", true},
+		{"return foobar;", "foobar"},
 	}
 
-	for _, statement := range program.Statements {
-		returnStmt, ok := statement.(*ast.ReturnStatement)
-		if !ok {
-			t.Errorf("statement not ReturnStatement, got %T", statement)
-			continue
+	for _, tt := range tests {
+		fmt.Println(tt.input)
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("statements, expected 1 got %d", len(program.Statements))
 		}
 
-		if returnStmt.TokenLiteral() != "return" {
-			t.Errorf("TokenLiteral not return, got %q",
-				returnStmt.TokenLiteral())
+		statement, ok := program.Statements[0].(*ast.ReturnStatement)
+		if !ok {
+			t.Fatalf("statement not returnStatement, got %T", program.Statements[0])
+		}
+
+		if statement.TokenLiteral() != "return" {
+			t.Fatalf("tokenLiteral not 'return' got %q", statement.TokenLiteral())
+		}
+
+		if !testLiteralExpression(t, statement.ReturnValue, tt.expectedValue) {
+			return
 		}
 	}
 }

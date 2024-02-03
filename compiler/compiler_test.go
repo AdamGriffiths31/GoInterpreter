@@ -517,36 +517,21 @@ func TestFunctionCalls(t *testing.T) {
 		},
 		{
 			input: `
-            let oneArg = fn(a) {  };
-            oneArg(24);
-            `,
-			expectedConsts: []interface{}{
-				24,
-				[]code.Instructions{
-					code.Make(code.OpReturn),
-				},
-			},
-			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpSetGlobal, 0),
-				code.Make(code.OpGetGlobal, 0),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpCall, 1),
-				code.Make(code.OpPop),
-			},
-		},
-		{
-			input: `
-            let manyArg = fn(a, b, c) {  };
+            let manyArg = fn(a, b, c) { a; b; c;  };
             manyArg(24, 25, 26);
             `,
 			expectedConsts: []interface{}{
+				[]code.Instructions{
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpPop),
+					code.Make(code.OpGetLocal, 1),
+					code.Make(code.OpPop),
+					code.Make(code.OpGetLocal, 2),
+					code.Make(code.OpReturnValue),
+				},
 				24,
 				25,
 				26,
-				[]code.Instructions{
-					code.Make(code.OpReturn),
-				},
 			},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
@@ -565,13 +550,12 @@ func TestFunctionCalls(t *testing.T) {
             oneArg(24);
             `,
 			expectedConsts: []interface{}{
-				24,
 				[]code.Instructions{
 					code.Make(code.OpGetLocal, 0),
 					code.Make(code.OpReturnValue),
 				},
-			},
-			expectedInstructions: []code.Instructions{
+				24,
+			}, expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpSetGlobal, 0),
 				code.Make(code.OpGetGlobal, 0),
@@ -586,9 +570,6 @@ func TestFunctionCalls(t *testing.T) {
             manyArg(24, 25, 26);
             `,
 			expectedConsts: []interface{}{
-				24,
-				25,
-				26,
 				[]code.Instructions{
 					code.Make(code.OpGetLocal, 0),
 					code.Make(code.OpPop),
@@ -597,6 +578,9 @@ func TestFunctionCalls(t *testing.T) {
 					code.Make(code.OpGetLocal, 2),
 					code.Make(code.OpReturnValue),
 				},
+				24,
+				25,
+				26,
 			},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
