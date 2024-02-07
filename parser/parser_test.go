@@ -900,3 +900,30 @@ func TestParsingHashLiteralsWithExpressions(t *testing.T) {
 		testFunc(value)
 	}
 }
+
+func TestFunctionLiteralName(t *testing.T) {
+	input := `let myFunction = fn() {};`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("statements, expected 1 got %d", len(program.Statements))
+	}
+
+	statement, ok := program.Statements[0].(*ast.LetStatement)
+	if !ok {
+		t.Fatalf("statement not letStatement, got %T", program.Statements[0])
+	}
+
+	function, ok := statement.Value.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("value not functionLiteral, got %T", statement.Value)
+	}
+
+	if function.Name != "myFunction" {
+		t.Fatalf("function name, expected myFunction got %s", function.Name)
+	}
+}

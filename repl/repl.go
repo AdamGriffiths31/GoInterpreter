@@ -36,6 +36,7 @@ func Start(in io.Reader, out io.Writer) {
 
 		program := p.ParseProgram()
 		if len(p.Errors()) != 0 {
+			fmt.Fprintf(out, "Parser errors:\n")
 			printParseErrors(out, p.Errors())
 			continue
 		}
@@ -47,7 +48,10 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		machine := vm.NewWithGlobalsStore(comp.Bytecode(), globals)
+		code := comp.Bytecode()
+		constants = code.Constants
+
+		machine := vm.NewWithGlobalsStore(code, globals)
 		err = machine.Run()
 		if err != nil {
 			fmt.Fprintf(out, "Executing bytecode failed:\n %s\n", err)
